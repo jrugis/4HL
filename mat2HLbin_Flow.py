@@ -18,9 +18,8 @@ import read_write as rw
 def write_lsegs_4HL(f, lsegs):
   f.write(struct.pack('i', lsegs.shape[0]))                      # segment count
   for seg in lsegs:
-    f.write(struct.pack('f', np.linalg.norm(seg[1] - seg[0])))   # length
-    f.write(struct.pack('fff', seg[0][0], seg[0][1], seg[0][2])) # offset xyz
-    f.write(struct.pack('fff', 0.0, 0.0, 0.0))                   # angle xyz
+    f.write(struct.pack('fff', seg[0][0], seg[0][1], seg[0][2])) # start point
+    f.write(struct.pack('fff', seg[1][0], seg[1][1], seg[1][2])) # end point
   return
 
 # write lumen flow data to hololens file
