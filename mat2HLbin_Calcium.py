@@ -64,22 +64,27 @@ def write_4HL(fname, verts, c_data, min, max, cm):
 #print 'keys:', dist.keys()
 #dist_key = 'c_tot'
 
-dist_name = 'Ind_Cell_FFR.mat'
+#dist_name = 'lumen/Ind_Cell_FFR.mat'
+dist_name = 'lumen/Flow_Rate_Per_Line.mat'
 print 'matlab data file: ' + dist_name 
 dist = sc.loadmat(dist_name)
-print 'keys:', dist.keys()
-dist_key = 'MAT_FFR'
+#print 'keys:', dist.keys()
+#dist_key = 'MAT_FFR'
+dist_key = 'FF'
 
 flow_data = dist[dist_key]
 dims = flow_data.shape
 print dims
-for row in range(dims[0]):
-  for col in range(dims[1]):
-    print '{:6d}'.format(flow_data[row, col].shape[0]),
-  print
+#for row in range(dims[0]):
+#  for col in range(dims[1]):
+#    print '{:6d}'.format(flow_data[row, col].shape[0]),
+#  print
+for seg in flow_data:
+  #print seg[0].shape
+  print '{:2f}'.format(seg[0][11500:31500:10].max())
 
-print flow_data[1, 0].min()
-print flow_data[1, 0].max()
+#print flow_data[1, 0].min()
+#print flow_data[1, 0].max()
 
 
 ### create a colormap

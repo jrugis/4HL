@@ -10,8 +10,8 @@ from evtk.vtk import VtkTetra
 ###########################################################################
 
 ###########################################################################
-def read_lumen():
-  f1 = open('lumen_lines.txt', 'r') # open the lumen file
+def read_lumen(fname):
+  f1 = open(fname, 'r') # open the lumen file
 
   nlverts = int(f1.next().split()[0]) 
   lverts = np.empty([nlverts, 3])
@@ -23,11 +23,11 @@ def read_lumen():
   for i in range(nlines): # get the lumen line segments
     lines[i] = map(int, f1.next().split()[0:2])
 
-  lsegs = np.empty([nlines, 6])
+  lsegs = np.empty([nlines, 2, 3])
   for i in range(nlines): # get the lumen line segments
     v1 = map(float, lverts[lines[i,0]-1])
     v2 = map(float, lverts[lines[i,1]-1])
-    lsegs[i] = np.array([v1, v2]).flatten()
+    lsegs[i] = np.array([v1, v2])
 
   f1.close()
   return lsegs
