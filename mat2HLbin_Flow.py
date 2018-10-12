@@ -26,9 +26,13 @@ def write_lsegs_4HL(f, lsegs):
 def write_fdata_4HL(start, finish, stride, f, fdata):
   count = fdata[0][0][start:finish:stride].shape[0] # time step count     
   print 'time steps:', count
+  min = fdata[37][0][start:finish:stride].min() # HARD CODED TO EXIT SEGMENT!!!
+  max = fdata[37][0][start:finish:stride].max() # HARD CODED TO EXIT SEGMENT!!!
+  #print 'data min/max:', min, max
   f.write(struct.pack('i', count))
   for seg in fdata:
-    trim = seg[0][start:finish:stride]
+    trim = seg[0][start:finish:stride] / max
+    #print trim.max()
     for t in trim:
       f.write(struct.pack('f', t))                  # flow rate (per segment)
   return
