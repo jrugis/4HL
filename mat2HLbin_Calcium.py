@@ -68,8 +68,9 @@ def write_4HL(fname, verts, c_data):
   for x in verts:
     f1.write(struct.pack('fff', x[0], x[1], x[2]))
   f1.write(struct.pack('i', c_data.shape[1]))
-  for x in c_data:
-    f1.write(struct.pack('f', x[0]))
+  for r in c_data:
+    for c in r:
+      f1.write(struct.pack('f', c))
   f1.close
   return
 
