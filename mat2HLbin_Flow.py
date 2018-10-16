@@ -57,7 +57,10 @@ write_lsegs_4HL(f1, rw.read_lumen(tname))
 print 'matlab data file: ' + fname
 dist = sc.loadmat(fname)
 #print 'keys:', dist.keys()
+#plt.plot(dist[dist_key][37, 0])
+#plt.show()
 write_fdata_4HL(11500, 31500, 30, f1, dist[dist_key])
+
 
 # close hololens file
 f1.close()

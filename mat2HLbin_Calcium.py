@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 #
-# mat2HLbin.py
+# mat2HLbin_Calcium.py
 
-#import h5py
 import hdf5storage
-import matplotlib.cm as mp
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.io as sc
 import struct
+
+import read_write as rw
 
 ##################################################################
 # functions
@@ -24,18 +23,46 @@ def read_bin(fname):
   f1.close # close the binary file 
   return verts
 
-# get the reduced indices (for hololens vis)
-def get_reduced_indices(fname):
-  f1 = open(fname, 'rb')
-  nidx = struct.unpack('i', f1.read(4))[0]
-  idx = np.zeros((nidx, 1), dtype=np.int32)
-  for i in range(nidx):
-    idx[i] = struct.unpack('i', f1.read(4))[0]
-  f1.close
-  return idx
+# reduced nodes for hololens
+def reduce_nodes(verts, tris):
+  rvertsi = np.array([range(1, verts.shape[0]+1)], dtype=int) # all vert indices
+  rvertsi = np.setdiff1d(rvertsi, tris) # remove surface tri indices
+  rvertsi -= 1; # change to zero indexed
+  nverts = 0.6 * verts # node reduction factor
+
+  nverts = nverts - np.min(nverts, axis=0) # normalise all verts to non-negative 
+  max = (np.max(nverts, axis=0)) # get the range of vertex values
+
+  # create a 4D grid (as an array) for extracting a uniform spatial vertex subset
+  # - stores distance to nearest vertex (dnv) and the associated vertex index at each grid point
+  # - the integer parts of every vertex coordinate are used to index the grid 
+  vgrid = np.zeros((np.concatenate((np.floor(max+1),[2])).astype(int)))
+  toohigh = 1000000 # high dummy values for dnv and index
+  vgrid.fill(toohigh) 
+
+  ifverts = np.modf(nverts) # get the integer and fractional part of all nverts
+
+  # iterate through rvertsi and store the vert that is closest to each (integer) grid point
+  for i in rvertsi:
+    dist = np.linalg.norm(ifverts[0][i])
+    vgridi = (ifverts[1][i]).astype(int) # grid index is simply the vertex location integer part
+    if dist > 0.5: # don't bother with grid points that have no close vertex
+      continue
+    noise = 0.3 * np.random.ranf() # some spatial dithering to break up an aligned visual
+    dist += noise
+
+    # is this vertex closest to the grid point?
+    if dist < vgrid[vgridi[0]][vgridi[1]][vgridi[2]][0]: 
+      vgrid[vgridi[0]][vgridi[1]][vgridi[2]][0] = dist # store the new closer distance
+      vgrid[vgridi[0]][vgridi[1]][vgridi[2]][1] = i # update the associated vertex index
+
+  # extract the close vertex indices
+  cvi = vgrid[:,:,:,1]
+  cvi = np.extract(cvi < toohigh, cvi)
+  return cvi.astype(int)
 
 # write for hololens vis data file
-def write_4HL(fname, verts, c_data, min, max, cm):
+def write_4HL(fname, verts, c_data):
   f1 = open(fname, 'wb')
   f1.write(struct.pack('i', verts.shape[0]))
   for x in verts:
@@ -43,11 +70,6 @@ def write_4HL(fname, verts, c_data, min, max, cm):
   f1.write(struct.pack('i', c_data.shape[1]))
   for x in c_data:
     f1.write(struct.pack('f', x[0]))
-  f1.write(struct.pack('f', min))
-  f1.write(struct.pack('f', max))
-  f1.write(struct.pack('i', cm.shape[0]))
-  for x in cm:
-    f1.write(struct.pack('fff', x[0], x[1], x[2]))
   f1.close
   return
 
@@ -55,70 +77,46 @@ def write_4HL(fname, verts, c_data, min, max, cm):
 # main program
 ##################################################################
 
+## read cell data and write hololens files
+#for cell_num in range(1,8):
+for cell_num in range(3,4):
+  cell_num = 3
+  print
+  print 'cell number: ', cell_num
 
-# read matlab data file
+  # read mesh file
+  fname = 'meshes/4sim_out_N4_p3-p2-p4-' + str(cell_num) + 'tet.bin'
+  print 'mesh file: ' + fname
+  verts, tris, tets, dfa, dfb, apical, basal, common = rw.read_bin(fname)
 
-#dist_name = 'cell1_sol.mat'
-#print 'matlab data file: ' + dist_name 
-#dist = hdf5storage.loadmat(dist_name)
-#print 'keys:', dist.keys()
-#dist_key = 'c_tot'
+  # reduce nodes for hololens
+  idx = reduce_nodes(verts, tris)
+  rverts = verts[idx]
+  print 'vertex reduction:', verts.shape[0], '->', idx.shape[0]
 
-#dist_name = 'lumen/Ind_Cell_FFR.mat'
-dist_name = 'lumen/Flow_Rate_Per_Line.mat'
-print 'matlab data file: ' + dist_name 
-dist = sc.loadmat(dist_name)
-#print 'keys:', dist.keys()
-#dist_key = 'MAT_FFR'
-dist_key = 'FF'
+  # read matlab data file
+  dist_name = 'cell' + str(cell_num) + '_sol.mat'
+  print 'matlab data file: ' + dist_name 
+  dist = hdf5storage.loadmat(dist_name)
+  #print 'keys:', dist.keys()
+  dist_key = 'c_tot'
+  start = 600
+  finish = 1400
+  ca_data = dist[dist_key][0, 0][idx, start:finish]
+  dims = ca_data.shape
+  print 'time steps: ' + str(dims[1])
+  min = ca_data.min()
+  max = ca_data.max()
+  print 'min:', '{:0.3f}'.format(min),
+  print 'max:', '{:0.3f}'.format(max)
 
-flow_data = dist[dist_key]
-dims = flow_data.shape
-print dims
-#for row in range(dims[0]):
-#  for col in range(dims[1]):
-#    print '{:6d}'.format(flow_data[row, col].shape[0]),
-#  print
-for seg in flow_data:
-  #print seg[0].shape
-  print '{:2f}'.format(seg[0][11500:31500:10].max())
+  # write hololens file
+  fname = '4HL/4HL_Cell' + str(cell_num) + ".bin"
+  print 'hololens data file: ' + fname 
+  write_4HL(fname, rverts, ca_data / max)
 
-#print flow_data[1, 0].min()
-#print flow_data[1, 0].max()
+  # plot
+  plt.plot(np.transpose(ca_data[0:10, :]))
+  plt.show()
 
-
-### create a colormap
-##ncolors = 1000
-##cmap = mp.get_cmap("coolwarm",ncolors) # get a matplotlib color map
-##cm = np.zeros([ncolors, 4])
-##for i in range(ncolors): # convert colormap lut to numpy array
-##  cm[i] = cmap(i)
-##cm = cm[:,0:3] # don't need alpha
-
-### read cell data and write hololens files
-##for cell_num in range(1,8):
-##  print
-##  print 'cell number: ', cell_num
-##  fname = '4sim_out_N4_p3-p2-p4-' + str(cell_num) + 'tet.bin'
-##  print 'mesh file: ' + fname
-##  verts = read_bin(fname)
-
-##  fname = 'reduced-indices_out_N4_p3-p2-p4-' + str(cell_num) + "tet.bin"
-##  print 'reduced indices file: ' + fname
-##  idx = get_reduced_indices(fname) # zero indexed
-##  rverts = verts[idx[:,0]]
-##  print 'vertex reduction:', verts.shape[0], '->', idx.shape[0]
-
-##  c_data = node_data[0, cell_num-1]
-##  c_data = c_data[idx[:,0]]
-##  print 'min:', '{:0.3f}'.format(c_data.min()),
-##  print 'max:', '{:0.3f}'.format(c_data.max())
-
-##  fname = '4HL_Cell' + str(cell_num) + ".bin"
-##  min = 0.0
-##  max = 5.0
-##  write_4HL(fname, rverts, c_data[:,500:1100], min, max, cm)
-##  #plt.plot(np.transpose(c_data[0:10,:]))
-
-#plt.show()
 
