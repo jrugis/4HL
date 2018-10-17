@@ -114,7 +114,7 @@ for cell_num in range(3,4):
   # write hololens file
   fname = '4HL/4HL_Cell' + str(cell_num) + ".bin"
   print 'hololens data file: ' + fname 
-  write_4HL(fname, rverts, ca_data / max)
+  write_4HL(fname, rverts, (ca_data - min) / (max - min)) # range 0.0 to 1.0
 
   # plot
   plt.plot(np.transpose(ca_data[0:10, :]))
