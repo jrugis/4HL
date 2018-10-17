@@ -96,7 +96,7 @@ for cell_num in range(3,4):
   print 'vertex reduction:', verts.shape[0], '->', idx.shape[0]
 
   # read matlab data file
-  dist_name = 'cell' + str(cell_num) + '_sol.mat'
+  dist_name = 'cells/cell' + str(cell_num) + '_sol.mat'
   print 'matlab data file: ' + dist_name 
   dist = hdf5storage.loadmat(dist_name)
   #print 'keys:', dist.keys()
