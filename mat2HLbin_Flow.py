@@ -43,7 +43,8 @@ def write_fdata_4HL(start, finish, stride, f, fdata):
 
 hname = '4HL/4HL_Lumen.bin'
 tname = 'lumen/tree.txt'
-fname = 'lumen/Flow_Rate_Per_Line.mat'
+#fname = 'lumen/Flow_Rate_Per_Line.mat'
+fname = 'lumen/FFR_UPDATE.mat'
 dist_key = 'FF'
 
 # create hololens file

@@ -79,9 +79,7 @@ def write_4HL(fname, verts, c_data):
 ##################################################################
 
 ## read cell data and write hololens files
-#for cell_num in range(1,8):
-for cell_num in range(3,4):
-  cell_num = 3
+for cell_num in range(1,8):
   print
   print 'cell number: ', cell_num
 
@@ -96,13 +94,13 @@ for cell_num in range(3,4):
   print 'vertex reduction:', verts.shape[0], '->', idx.shape[0]
 
   # read matlab data file
-  dist_name = 'cells/cell' + str(cell_num) + '_sol.mat'
+  dist_name = 'cells/Cell' + str(cell_num) + '.mat'
   print 'matlab data file: ' + dist_name 
   dist = hdf5storage.loadmat(dist_name)
   #print 'keys:', dist.keys()
   dist_key = 'c_tot'
-  start = 600
-  finish = 1400
+  start = 640
+  finish = 1307
   ca_data = dist[dist_key][0, 0][idx, start:finish]
   dims = ca_data.shape
   print 'time steps: ' + str(dims[1])
@@ -117,7 +115,9 @@ for cell_num in range(3,4):
   write_4HL(fname, rverts, (ca_data - min) / (max - min)) # range 0.0 to 1.0
 
   # plot
-  plt.plot(np.transpose(ca_data[0:10, :]))
-  plt.show()
+  max_row = np.argmax(np.max(ca_data, axis=1))
+  plt.plot(np.transpose(ca_data[max_row, :]))
+
+plt.show()
 
 
